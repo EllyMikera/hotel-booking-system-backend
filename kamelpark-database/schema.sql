@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS rooms (
     room_number VARCHAR(10) UNIQUE NOT NULL,
     room_type VARCHAR(50) NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
-    status ENUM('available', 'booked', 'occupied', 'maintenance') DEFAULT 'available',
+    description VARCHAR(255) NOT NULL,
+    status ENUM('available', 'occupied', 'maintenance') NOT NULL DEFAULT 'available',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -31,8 +32,9 @@ CREATE TABLE IF NOT EXISTS reservations (
     room_id INT NOT NULL,
     check_in_date DATE NOT NULL,
     check_out_date DATE NOT NULL,
-    status ENUM('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled') DEFAULT 'pending',
+    status ENUM('pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled') NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reservation_reference_id VARCHAR(30),
     FOREIGN KEY (guest_id) REFERENCES guests(guest_id),
     FOREIGN KEY (room_id) REFERENCES rooms(room_id)
 );
@@ -45,5 +47,12 @@ CREATE TABLE IF NOT EXISTS payments (
     reservation_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('pending', 'success', 'cancelled', 'failed') NOT NULL DEFAULT 'pending',
     FOREIGN KEY (reservation_id) REFERENCES reservations(reservation_id)
 );
+
+-- =============================================================
+-- One reservation can have many payments(successfull, failed)
+-- =============================================================
+
+-- To copy the whole schema use; mysql -u root -p database_name < schema.sql

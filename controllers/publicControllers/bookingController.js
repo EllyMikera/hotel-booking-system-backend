@@ -1,9 +1,9 @@
 const pool = require('../../config/DBconnection');
 
 const bookRoom = async (req, res) => {
-    const {room_id, full_name, identification_number, phone_number, email, checkin_date, checkout_date} = req.body
+    const {room_id, full_name, identification_number, phone, email, check_in_date, check_out_date} = req.body
     try {
-        if(!room_id || !full_name || !identification_number || !phone_number || !email ||!checkin_date ||!checkout_date) {
+        if(!room_id || !full_name || !identification_number || !phone || !email ||!check_in_date ||!check_out_date) {
             console.log('Input fields cannot be empty')
             return res.status(400).json({
                 message: 'Input fields cannot be empty'
@@ -13,7 +13,7 @@ const bookRoom = async (req, res) => {
         const today = new Date()
         today.setHours(0,0,0,0)
 
-        const checkin = new Date(checkin_date)
+        const checkin = new Date(check_in_date)
         checkin.setHours(0,0,0,0)
 
         if(checkin < today) {
@@ -23,7 +23,7 @@ const bookRoom = async (req, res) => {
             })
         }
 
-        if(new Date(checkin_date) >= new Date(checkout_date)) {
+        if(new Date(check_in_date) >= new Date(check_out_date)) {
             console.log('Checkin date must be before checkout date')
             return res.status(400).json({
                 message: 'Checkin date must be before checkout date'
@@ -43,13 +43,13 @@ const bookRoom = async (req, res) => {
         }
 
         const [existingReservations] = await pool.query(
-            `SELECT id FROM reservation
+            `SELECT reservation_id FROM reservations
             WHERE room_id = ?
             AND
-            checkin_date < ?
+            check_in_date < ?
             AND
-            checkout_date > ?`,
-            [room_id, checkout_date, checkin_date]
+            check_out_date > ?`,
+            [room_id, check_out_date, check_in_date]
         )
 
         if(existingReservations.length > 0) {
@@ -67,8 +67,8 @@ const bookRoom = async (req, res) => {
         let guestid;
         if(existingGuest.length === 0) {
             const [results] = await pool.query(
-                'INSERT INTO guests(full_name, identification_number, phone_number, email) VALUES(?, ?, ?, ?)',
-                [full_name, identification_number, phone_number, email]
+                'INSERT INTO guests(full_name, identification_number, phone, email) VALUES(?, ?, ?, ?)',
+                [full_name, identification_number, phone, email]
             )
 
             guestid = results.insertId
@@ -78,8 +78,8 @@ const bookRoom = async (req, res) => {
 
         let reservationid;
         const [reservationsData] = await pool.query(
-            'INSERT INTO reservation(room_id, guest_id, checkin_date, checkout_date) VALUES(?, ?, ?, ?)',
-            [room_id, guestid, checkin_date, checkout_date]
+            'INSERT INTO reservations(room_id, guest_id, check_in_date, check_out_date) VALUES(?, ?, ?, ?)',
+            [room_id, guestid, check_in_date, check_out_date]
         )
         reservationid = reservationsData.insertId
         console.log(reservationid)
@@ -90,9 +90,20 @@ const bookRoom = async (req, res) => {
         ) 
 
         await pool.query(
-            'UPDATE reservation SET status = "confirmed" WHERE id = ?',
+            'UPDATE reservations SET status = "pending" WHERE reservation_id = ?',
             [reservationid]
         )
+
+        /*
+        The Payment service goes here
+        */
+
+        /* if the payment is successful then this code runs. if not, the code stops at the payment service block
+        await pool.query(
+            'UPDATE reservations SET status = "confirmed" WHERE reservation_id = ?',
+            [reservationid]
+        )
+        */
 
         console.log('Room booked successfully');
         return res.status(200).json({

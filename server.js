@@ -4,6 +4,8 @@ const loginUser = require('./routes/adminRoutes/login')
 const registerUser = require('./routes/adminRoutes/register')
 const searchRoom = require('./routes/publicRoutes/searchroom')
 const bookRoom = require('./routes/publicRoutes/bookroom')
+const fetchrooms = require('./routes/publicRoutes/fetchrooms')
+const singleRoomDetails = require('./routes/publicRoutes/roomDetails')
 
 dotenv.config()
 const PORT = process.env.PORT
@@ -15,6 +17,8 @@ server.use('/login', loginUser)
 server.use('/register', registerUser)
 server.use('/searchroom', searchRoom)
 server.use('/bookroom', bookRoom)
+server.use('/fetchrooms', fetchrooms)
+server.use('/roomdetails', singleRoomDetails)
 
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`)

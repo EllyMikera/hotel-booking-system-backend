@@ -1,9 +1,9 @@
 const pool = require('../../config/DBconnection');
 
 const searchRoom = async (req, res) => {
-    const {checkin_date, checkout_date, room_type} = req.body
+    const {check_in_date, check_out_date, room_type} = req.body
     try {
-        if(!checkin_date || !checkout_date || !room_type) {
+        if(!check_in_date || !check_out_date || !room_type) {
             console.log("Missing required fields");
             return res.status(400).json({
                 message: "Missing required fields"
@@ -13,7 +13,7 @@ const searchRoom = async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const checkin = new Date(checkin_date);
+        const checkin = new Date(check_in_date);
         checkin.setHours(0, 0, 0, 0);
 
         if(checkin < today) {
@@ -23,7 +23,7 @@ const searchRoom = async (req, res) => {
             });
         }
 
-        if(new Date(checkin_date) >= new Date(checkout_date)) {
+        if(new Date(check_in_date) >= new Date(check_out_date)) {
             console.log("Check-in date must be before check-out date");
             return res.status(400).json({
                 message: "Check-in date must be before check-out date"
@@ -31,19 +31,19 @@ const searchRoom = async (req, res) => {
         }
 
         const [availableRooms] = await pool.query(
-            `SELECT * 
+            `SELECT room_number, room_type, price, description, status 
             FROM rooms 
             WHERE room_type = ? 
             AND status = "available" 
             AND room_id NOT IN (
                 SELECT room_id 
-                FROM reservation 
+                FROM reservations
                 WHERE 
-                    checkin_date < ?
+                    check_in_date < ?
                     AND
-                    checkout_date > ?
+                    check_out_date > ?
             )`,
-            [room_type, checkout_date, checkin_date]
+            [room_type, check_out_date, check_in_date]
         )
 
         if(availableRooms.length === 0) {
